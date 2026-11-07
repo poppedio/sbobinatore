@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import inspect
 import os
+import platform
 import time
 from pathlib import Path
 
@@ -217,7 +218,10 @@ with st.sidebar:
     backend_options = ["auto", "mlx-whisper", "faster-whisper"] if apple_mac else ["faster-whisper"]
     backend = st.selectbox(
         "Backend", backend_options, index=0,
-        help="Su Apple Silicon 'auto' usa mlx-whisper (GPU). Se MLX non è disponibile usa faster-whisper.",
+        help=("Su Apple Silicon 'auto' usa mlx-whisper (GPU). Se MLX non è disponibile usa faster-whisper."
+              if apple_mac else
+              "Su Windows e Linux si usa faster-whisper. Con una GPU NVIDIA imposta Device = cuda in 'Avanzate faster-whisper'; "
+              "altrimenti resta su CPU (int8) e scegli un modello più piccolo per andare più veloce."),
     )
     model_size = st.selectbox(
         "Modello Whisper", MODEL_OPTIONS, index=MODEL_OPTIONS.index(choose_default_model()),
@@ -228,8 +232,10 @@ with st.sidebar:
                               help="L'audio viene tagliato sulle pause in blocchi di questa durata: progresso, annullamento e ripresa lavorano per blocco.")
     vad_filter = st.checkbox("Rileva pause e salta i silenzi (VAD)", value=True)
     with st.expander("Avanzate faster-whisper"):
-        device = st.selectbox("Device", ["cpu"] if apple_mac else ["cpu", "cuda"], index=0)
-        compute_type = st.selectbox("Compute type", ["int8", "float16", "float32"], index=0)
+        device = st.selectbox("Device", ["cpu"] if apple_mac else ["cpu", "cuda"], index=0,
+                              help="cuda richiede una GPU NVIDIA con driver aggiornati; su CPU scegli int8.")
+        compute_type = st.selectbox("Compute type", ["int8", "float16", "float32"], index=0,
+                                    help="int8 per la CPU; float16 per GPU NVIDIA (cuda).")
         allow_cpu_fallback = st.checkbox(
             "Se MLX fallisce, continua con faster-whisper su CPU", value=False,
             help="Disattivato: un errore MLX viene mostrato subito invece di partire con una trascrizione CPU molto più lenta.",
@@ -284,11 +290,14 @@ with st.sidebar:
 # pagina
 # ---------------------------------------------------------------------------
 st.title("🧠 Sbobinatore lezioni in locale")
-st.caption("Trascrizione locale con Whisper, a blocchi e con ripresa; pacchetto studio con Ollama o euristiche; tutto resta sul tuo Mac.")
+st.caption("Trascrizione locale con Whisper, a blocchi e con ripresa; pacchetto studio con Ollama o euristiche; tutto resta sul tuo computer.")
 
 if not ffmpeg_works():
-    st.warning("ffmpeg non è disponibile o non parte (libreria mancante?): la conversione userà PyAV, più lenta. "
-               "Su Mac: `brew install ffmpeg` oppure `brew upgrade ffmpeg`.")
+    _ffmpeg_hint = {
+        "Darwin": "Su Mac: `brew install ffmpeg` oppure `brew upgrade ffmpeg`.",
+        "Windows": "Su Windows: `winget install Gyan.FFmpeg` in PowerShell, poi chiudi e riapri il terminale e rilancia l'app.",
+    }.get(platform.system(), "Su Linux: `sudo apt install ffmpeg` (o il pacchetto della tua distribuzione).")
+    st.warning("ffmpeg non è disponibile o non parte (libreria mancante?): la conversione userà PyAV, più lenta. " + _ffmpeg_hint)
 
 notice = st.session_state.pop("notice", None)
 if notice:
@@ -296,11 +305,17 @@ if notice:
 
 # --- 1. sorgente ---
 st.subheader("1. Scegli la registrazione")
-tab_path, tab_upload, tab_cache = st.tabs(["File sul Mac (consigliato per file grandi)", "Carica file", "Lezioni già elaborate"])
+tab_path, tab_upload, tab_cache = st.tabs(["File sul computer (consigliato per file grandi)", "Carica file", "Lezioni già elaborate"])
 
 with tab_path:
-    st.caption("Incolla il percorso del file: nessun upload, nessuna copia in memoria. Trascina il file nel terminale per ottenere il percorso.")
-    local_path = st.text_input("Percorso del file", placeholder="/Users/tuonome/Downloads/lezione.mp4")
+    if platform.system() == "Windows":
+        st.caption("Incolla il percorso del file: nessun upload, nessuna copia in memoria. "
+                   "In Esplora file: Maiusc + clic destro sul file, poi \"Copia come percorso\" (le virgolette vengono tolte da sole).")
+        _placeholder = r"C:\Users\tuonome\Downloads\lezione.mp4"
+    else:
+        st.caption("Incolla il percorso del file: nessun upload, nessuna copia in memoria. Trascina il file nel terminale per ottenere il percorso.")
+        _placeholder = "/Users/tuonome/Downloads/lezione.mp4" if platform.system() == "Darwin" else "/home/tuonome/Scaricati/lezione.mp4"
+    local_path = st.text_input("Percorso del file", placeholder=_placeholder)
     if st.button("Usa questo file", key="use_local"):
         candidate = os.path.expanduser(local_path.strip().strip("'\""))
         if not candidate or not os.path.isfile(candidate):

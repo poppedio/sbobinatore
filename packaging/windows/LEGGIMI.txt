@@ -1,0 +1,18 @@
+SBOBINATORE - versione portatile per Windows (64 bit)
+
+Non serve installare nulla: Python e tutte le librerie sono gia' in questa cartella.
+
+COME SI USA
+1. Tieni questa cartella dove preferisci (per esempio in Documenti). Non spostare i file al suo interno.
+2. Fai doppio clic su Sbobinatore.bat.
+   Se compare l'avviso di Windows "PC protetto da Windows", premi "Ulteriori informazioni" e poi "Esegui comunque".
+   Se il firewall chiede un permesso, consenti l'accesso alle reti private: l'app e' visibile solo dal tuo computer.
+3. Si apre una finestra nera e, dopo qualche secondo, il browser con Sbobinatore. Lascia aperta la finestra nera.
+4. Scegli la registrazione e premi Trascrivi. La prima volta viene scaricato il modello (circa 1,6 GB): puo' volerci qualche minuto.
+
+CONSIGLI
+- Per velocizzare la lettura di audio e video puoi installare ffmpeg (in PowerShell: winget install Gyan.FFmpeg). Senza, funziona comunque.
+- Per sintesi, capitoli e appunti installa Ollama da https://ollama.com e scarica un modello (vedi README.md).
+- Se hai una scheda video NVIDIA: nella barra laterale, "Avanzate faster-whisper", Device = cuda e Compute type = float16.
+
+Guida completa e aggiornamenti: https://github.com/poppedio/sbobinatore

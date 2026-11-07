@@ -1,0 +1,69 @@
+name: Windows portatile
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Costruisci il pacchetto portatile
+        id: build
+        shell: pwsh
+        run: ./packaging/windows/build_portable.ps1
+
+      - name: Test 1, l'app si carica con il Python incluso
+        shell: pwsh
+        working-directory: build/Sbobinatore
+        run: |
+          ./python/python.exe -c "from streamlit.testing.v1 import AppTest; at = AppTest.from_file('app.py', default_timeout=180).run(); assert not at.exception, at.exception; print('app ok, titolo:', at.title[0].value)"
+
+      - name: Test 2, il lanciatore avvia il server
+        shell: pwsh
+        env:
+          STREAMLIT_SERVER_HEADLESS: "true"
+        run: |
+          $p = Start-Process -FilePath "cmd.exe" -ArgumentList "/c", "build\Sbobinatore\Sbobinatore.bat" -PassThru -RedirectStandardOutput avvio.log -RedirectStandardError avvio.err
+          $ok = $false
+          foreach ($i in 1..60) {
+            Start-Sleep -Seconds 2
+            try {
+              $r = Invoke-WebRequest -UseBasicParsing -Uri http://localhost:8501/_stcore/health -TimeoutSec 2
+              if ($r.Content.Trim() -eq "ok") { $ok = $true; break }
+            } catch {}
+          }
+          Write-Host "--- output del lanciatore"
+          Get-Content avvio.log, avvio.err -ErrorAction SilentlyContinue
+          Stop-Process -Id $p.Id -Force -ErrorAction SilentlyContinue
+          Get-Process python -ErrorAction SilentlyContinue | Stop-Process -Force
+          if (-not $ok) { throw "il server non ha risposto su localhost:8501 entro 2 minuti" }
+          Write-Host "server ok"
+
+      - name: Conserva lo zip come artefatto
+        uses: actions/upload-artifact@v4
+        with:
+          name: Sbobinatore-windows-x64
+          path: dist/*.zip
+          if-no-files-found: error
+
+      - name: Pubblica nella Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+          REPO: ${{ github.repository }}
+        run: |
+          $zip = (Get-ChildItem dist\*.zip | Select-Object -First 1).FullName
+          gh release view $env:TAG --repo $env:REPO 2>$null
+          if ($LASTEXITCODE -ne 0) {
+            gh release create $env:TAG --repo $env:REPO --title "Sbobinatore $env:TAG" --notes-file packaging/windows/RELEASE_NOTES.md
+          }
+          gh release upload $env:TAG $zip --repo $env:REPO --clobber

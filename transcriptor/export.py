@@ -161,3 +161,58 @@ def build_json(segments: Sequence[Segment], meta: Dict, pack: Dict = None) -> st
     if pack:
         payload["study_pack"] = {k: v for k, v in pack.items() if k != "blocks"}
     return json.dumps(payload, ensure_ascii=False, indent=1)
+
+
+# --- DOCX (Word) ---
+def build_docx(title: str, paragraphs: Sequence[Dict], pack: Dict, with_timestamps: bool = True) -> bytes:
+    """Documento Word vero (python-docx): stesso contenuto di Markdown e RTF."""
+    import io
+
+    from docx import Document
+    from docx.shared import Pt
+
+    doc = Document()
+    doc.styles["Normal"].font.size = Pt(11)
+    doc.add_heading(title, level=0)
+
+    def bullet(text: str, bold_prefix: str = "") -> None:
+        para = doc.add_paragraph(style="List Bullet")
+        if bold_prefix:
+            para.add_run(bold_prefix + " ").bold = True
+        para.add_run(text)
+
+    if pack.get("summary"):
+        doc.add_heading("Sintesi", level=1)
+        for item in pack["summary"]:
+            bullet(item)
+    if pack.get("key_concepts"):
+        doc.add_heading("Concetti chiave", level=1)
+        for item in pack["key_concepts"]:
+            bullet(item.get("explanation", ""), bold_prefix=item["term"] + ":")
+    if pack.get("chapters"):
+        doc.add_heading("Capitoli", level=1)
+        for chapter in pack["chapters"]:
+            stamp = f"[{format_ts(chapter.get('start', 0))}] " if with_timestamps else ""
+            doc.add_heading(stamp + chapter["title"], level=2)
+            for piece in chapter.get("content", "").split("\n\n"):
+                if piece.strip():
+                    doc.add_paragraph(piece.strip())
+    if pack.get("glossary"):
+        doc.add_heading("Glossario", level=1)
+        for item in pack["glossary"]:
+            bullet(item.get("definition", ""), bold_prefix=item["term"] + ":")
+    if pack.get("review_questions"):
+        doc.add_heading("Domande di ripasso", level=1)
+        for i, q in enumerate(pack["review_questions"], start=1):
+            doc.add_paragraph(f"{i}. {q}")
+
+    doc.add_heading("Testo completo", level=1)
+    for p in paragraphs:
+        para = doc.add_paragraph()
+        if with_timestamps:
+            para.add_run(f"[{format_ts(p['start'])}] ").bold = True
+        para.add_run(p["text"])
+
+    buffer = io.BytesIO()
+    doc.save(buffer)
+    return buffer.getvalue()

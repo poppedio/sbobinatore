@@ -4,7 +4,7 @@
 ![Python 3.9+](https://img.shields.io/badge/python-3.9%2B-blue.svg)
 ![Piattaforma](https://img.shields.io/badge/piattaforma-macOS%20%7C%20Windows%20%7C%20Linux-lightgrey.svg)
 
-Hai la registrazione audio o video di una lezione? Sbobinatore la trasforma in testo scritto, con i minuti a fianco, e se vuoi ti prepara anche sintesi, capitoli, glossario, domande di ripasso e appunti completi.
+Hai la registrazione audio o video di una lezione? Sbobinatore la trasforma in testo scritto, con i minuti a fianco, e se vuoi ti prepara anche sintesi, capitoli, glossario, domande di ripasso e appunti completi. Puoi mettere in coda più lezioni, correggere i nomi che il riconoscimento sbaglia e scaricare tutto in Word.
 
 Funziona **interamente sul tuo computer**: nessuna registrazione viene caricata online, non servono account né abbonamenti.
 
@@ -35,7 +35,16 @@ Si apre una finestra nera con del testo: è normale. La prima volta scarica e in
 
 **4. Trascrivi la prima lezione.** Nella pagina scegli la scheda *File sul computer* e incolla il percorso della registrazione, oppure usa *Carica file* e trascina il file nel riquadro. Premi **Trascrivi**. La prima volta viene scaricato il modello di riconoscimento vocale (circa 1,6 GB): l'app te lo avvisa e possono passare alcuni minuti prima che la barra di avanzamento inizi a muoversi. Poi la trascrizione va da sola e puoi seguire il progresso.
 
-Quando è finita trovi il testo con i minuti, un pacchetto di studio di base e i pulsanti per scaricare tutto in Word (RTF), Markdown, testo, sottotitoli o JSON.
+Quando è finita trovi il testo con i minuti, un pacchetto di studio di base e i pulsanti per scaricare tutto in Word, Markdown o testo semplice (e, sotto "Altri formati", RTF, sottotitoli e JSON).
+
+**Buono a sapersi**
+
+- La barra laterale parte in **modalità semplice**: scegli solo il modello, la lingua e se usare Ollama. Accanto a ogni modello vedi la qualità e il tempo stimato per la registrazione scelta, calcolato sul tuo computer. Le opzioni tecniche compaiono attivando "Modalità avanzata".
+- **Più lezioni insieme**: nella scheda "Più lezioni in coda" incolli i percorsi (o una cartella intera) oppure carichi più file, premi "Avvia la coda" e vai a fare altro. Alla fine le trovi in "Lezioni già elaborate", già con il pacchetto studio se Ollama è attivo.
+- **Correggere i nomi**: nella scheda "Correggi la trascrizione" puoi sostituire una parola in tutto il testo ("Cheynes" con "Keynes") o modificare le singole frasi in tabella. Le correzioni finiscono nei documenti scaricati e nel pacchetto studio, che va rigenerato.
+- **Cercare nel testo**: la scheda "Testo completo" ha una casella di ricerca che mostra solo i paragrafi che contengono la parola.
+- Se il file si chiama "REC0042" l'app propone come titolo quello del primo capitolo del pacchetto studio.
+- Quando qualcosa va storto il messaggio spiega cosa fare in italiano (connessione assente durante il download, memoria insufficiente, Ollama spento), con i dettagli tecnici in un riquadro a parte.
 
 ### Vuoi sintesi e appunti fatti bene? Installa Ollama
 
@@ -71,7 +80,10 @@ Senza Ollama il pacchetto studio è essenziale. Con Ollama, un programma gratuit
 1. **Sorgente**: indichi il percorso di un file sul computer (consigliato per file grandi, zero upload) oppure lo carichi dal browser.
 2. **Trascrizione**: il file viene convertito in WAV 16 kHz mono (ffmpeg, o PyAV se ffmpeg manca), diviso in blocchi tagliati sulle pause (VAD Silero) e trascritto blocco per blocco con `mlx-whisper` (GPU Apple Silicon) o `faster-whisper` (Windows, Linux e Mac Intel: CPU, oppure GPU NVIDIA con CUDA). Vedi il progresso con stima del tempo, puoi annullare, e se riapri la stessa lezione riparte dai blocchi già fatti.
 3. **Pacchetto studio**: con Ollama, ogni blocco di circa 10 minuti viene analizzato da solo (titolo, punti, concetti, termini, appunti) e poi una chiamata finale unisce tutto in sintesi, capitoli con minuti, glossario e domande. La finestra di contesto viene dimensionata sul prompt, il thinking dei modelli Qwen3 è disattivato, l'output è vincolato da uno schema JSON. Senza Ollama si usano euristiche locali.
-4. **Export**: RTF (Word/Pages/LibreOffice), Markdown, appunti AI in Markdown, TXT con minuti, sottotitoli SRT, JSON completo.
+4. **Export**: Word (.docx), Markdown, appunti AI in Markdown, RTF, TXT con minuti, sottotitoli SRT, JSON completo.
+5. **Coda e correzioni**: più lezioni in sequenza in un unico job in background (con pacchetto studio opzionale); editor della trascrizione con trova/sostituisci che aggiorna la cache e invalida i pacchetti.
+
+Le stime dei tempi partono da fattori tabellari per Apple Silicon, CUDA e CPU (scalati sui core) e si correggono con le velocità misurate sulle trascrizioni precedenti (`~/.cache/transcriptor/speeds.json`).
 
 Tutto viene salvato in cache per impronta del file (`~/.cache/transcriptor` su Mac e Linux, `C:\Users\<nome>\.cache\transcriptor` su Windows; cambiabile con la variabile d'ambiente `TRANSCRIPTOR_CACHE_DIR`): rigenerare il pacchetto con un altro modello o livello di sintesi non ritrascrive nulla.
 
@@ -128,6 +140,8 @@ Poi `ollama pull <modello>` (vedi la tabella sopra). L'app rileva Ollama da sola
 
 ## Impostazioni utili
 
+In modalità semplice l'app imposta da sola i valori di questa tabella in base all'hardware rilevato (Apple Silicon, GPU NVIDIA via CUDA, oppure CPU). In "Modalità avanzata" li puoi cambiare.
+
 | Impostazione | Mac Apple Silicon | Windows / Linux con GPU NVIDIA | Windows / Linux solo CPU |
 | --- | --- | --- | --- |
 | Backend | `auto` (usa MLX, segnala l'errore invece di passare in silenzio alla CPU) | `faster-whisper` | `faster-whisper` |
@@ -151,7 +165,9 @@ transcriptor/cache.py      cache su disco per impronta del file
 transcriptor/textproc.py   pulizia testo, paragrafi con minuti, finestre per il modello, euristiche
 transcriptor/ollama.py     client Ollama: schema JSON, num_ctx dinamico, think off
 transcriptor/studypack.py  map/reduce per il pacchetto studio e gli appunti; fallback euristico
-transcriptor/export.py     Markdown, RTF, TXT, SRT, JSON
+transcriptor/export.py     Word (.docx), Markdown, RTF, TXT, SRT, JSON
+transcriptor/hardware.py   RAM, core, CUDA, stime dei tempi e velocità misurate; modelli Ollama adatti alla memoria
+transcriptor/errors.py     traduzione degli errori tecnici in messaggi con rimedio
 transcriptor/jobs.py       job in thread con progresso e annullamento
 tests/                     test unitari e smoke test headless dell'app
 ```

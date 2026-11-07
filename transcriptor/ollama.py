@@ -39,6 +39,20 @@ def list_models(base_url: str = DEFAULT_URL, timeout: float = 5.0) -> List[str]:
         return []
 
 
+def list_models_detailed(base_url: str = DEFAULT_URL, timeout: float = 5.0) -> List[Dict]:
+    """[{name, size}] con la dimensione del file in byte: serve a capire se il modello sta in memoria."""
+    try:
+        response = requests.get(f"{base_url.rstrip('/')}/api/tags", timeout=timeout)
+        response.raise_for_status()
+        out = []
+        for m in response.json().get("models", []):
+            if isinstance(m, dict) and m.get("name"):
+                out.append({"name": m["name"], "size": int(m.get("size") or 0)})
+        return sorted(out, key=lambda m: m["name"])
+    except Exception:
+        return []
+
+
 def pick_default_model(models: List[str]) -> Optional[str]:
     if not models:
         return None

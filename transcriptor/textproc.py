@@ -226,3 +226,15 @@ def highlight_terms_in_markdown(text: str, terms: Sequence[str], max_terms: int 
         pattern = re.compile(rf"(?<![\w*])({re.escape(term)})(?![\w*])", flags=re.IGNORECASE)
         highlighted = pattern.sub(r"**\1**", highlighted)
     return highlighted
+
+
+_GENERIC_TITLE = re.compile(
+    r"^(rec|recording|registrazione|nuova registrazione|new recording|audio|voice|memo|video|vid|img|mov|zoom|teams|meet|"
+    r"untitled|senza titolo|lezione|lesson|track|traccia|file|whatsapp audio|ptt)?[\s_\-\.\d:()]*$",
+    re.IGNORECASE,
+)
+
+
+def looks_generic_title(title: str) -> bool:
+    """True per titoli tipo 'REC0042', 'Nuova registrazione 3', '2024-10-01 10.30' che non dicono nulla della lezione."""
+    return bool(_GENERIC_TITLE.match((title or "").strip()))

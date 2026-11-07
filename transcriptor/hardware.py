@@ -80,6 +80,8 @@ SPEED_FACTORS: Dict[str, Dict[str, float]] = {
     "cpu": {"tiny": 14, "base": 9, "small": 4.5, "medium": 1.6, "large-v3": 0.6, "large-v3-turbo": 1.2},
 }
 
+MIN_DURATION_FOR_SPEED = 300.0  # secondi di audio sotto i quali la misura non viene memorizzata
+
 MODEL_QUALITY = {
     "tiny": "qualità bassa", "base": "qualità modesta", "small": "qualità discreta",
     "medium": "qualità buona", "large-v3": "qualità massima", "large-v3-turbo": "qualità ottima",
@@ -107,6 +109,8 @@ def record_speed(meta: Dict) -> None:
     model = meta.get("model_size") or meta.get("model")
     if not rtf or not model:
         return
+    if float(meta.get("duration") or 0) < MIN_DURATION_FOR_SPEED:
+        return  # su clip brevi pesa il caricamento del modello: la misura non dice nulla della velocità reale
     key = f"{accelerator_key(meta.get('backend', ''), meta.get('device', 'cpu'))}|{_short_model(model)}"
     with _LOCK:
         speeds = _load_speeds()

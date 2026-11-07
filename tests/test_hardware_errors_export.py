@@ -24,11 +24,13 @@ def test_estimates_are_ordered_by_model_and_accelerator(tmp_path, monkeypatch):
 def test_record_speed_is_used_for_later_estimates(tmp_path, monkeypatch):
     monkeypatch.setenv("TRANSCRIPTOR_CACHE_DIR", str(tmp_path))
     before = hardware.speed_factor("medium", "cpu")
-    hardware.record_speed({"backend": "faster-whisper", "device": "cpu", "model": "medium", "realtime_factor": 3.0})
+    # clip breve: ignorata (il caricamento del modello falserebbe la misura)
+    hardware.record_speed({"backend": "faster-whisper", "device": "cpu", "model": "medium", "realtime_factor": 0.2, "duration": 15.0})
+    assert hardware.speed_factor("medium", "cpu") == before
+    hardware.record_speed({"backend": "faster-whisper", "device": "cpu", "model": "medium", "realtime_factor": 3.0, "duration": 1800.0})
     assert hardware.speed_factor("medium", "cpu") == 3.0
-    hardware.record_speed({"backend": "faster-whisper", "device": "cpu", "model": "Systran/faster-whisper-medium", "realtime_factor": 5.0})
+    hardware.record_speed({"backend": "faster-whisper", "device": "cpu", "model": "Systran/faster-whisper-medium", "realtime_factor": 5.0, "duration": 1800.0})
     assert abs(hardware.speed_factor("medium", "cpu") - 3.8) < 0.01  # media mobile 0.6*3 + 0.4*5
-    assert before != 3.0 or True
 
 
 def test_ollama_fit_and_suggestion():

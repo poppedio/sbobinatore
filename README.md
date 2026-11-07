@@ -10,6 +10,15 @@ Funziona **interamente sul tuo computer**: nessuna registrazione viene caricata 
 
 ## Se non sei esperto: parti da qui
 
+### Windows: la via più semplice
+
+1. Scarica il file `Sbobinatore-…-windows-x64.zip` dall'[ultima versione pubblicata](https://github.com/poppedio/sbobinatore/releases/latest). Dentro c'è già tutto, Python compreso: non devi installare nulla.
+2. Tasto destro sullo ZIP, *Estrai tutto*, e sposta la cartella `Sbobinatore` dove preferisci, per esempio in Documenti.
+3. Doppio clic su `Sbobinatore.bat`. Se compare "PC protetto da Windows", premi *Ulteriori informazioni* e poi *Esegui comunque*. Se il firewall chiede un permesso, consenti l'accesso alle reti private.
+4. Si apre una finestra nera e poi il browser con Sbobinatore. Lascia aperta la finestra nera finché usi il programma. Poi vai al passo 4 qui sotto per la prima trascrizione.
+
+### Mac (e Windows senza il pacchetto pronto)
+
 Servono circa 15 minuti la prima volta, quasi tutti di attesa per i download. Le volte successive basta un doppio clic.
 
 **1. Scarica il programma.** In alto in questa pagina premi il pulsante verde **Code** e poi **Download ZIP**. Estrai il file scaricato: su Mac con un doppio clic, su Windows con tasto destro e *Estrai tutto*. Sposta la cartella `sbobinatore` dove preferisci, per esempio in Documenti.
@@ -45,6 +54,8 @@ Senza Ollama il pacchetto studio è essenziale. Con Ollama, un programma gratuit
 
 ### Problemi comuni
 
+- **Il pacchetto Windows pronto non parte**: assicurati di aver estratto lo ZIP (non basta aprirlo) e di non aver spostato file dentro la cartella `Sbobinatore`. Leggi anche `LEGGIMI.txt` nella cartella.
+
 - **Il doppio clic non fa niente o si apre un editor di testo** (Mac): vedi il punto 3, serve il comando `chmod +x`.
 - **"Python non è installato" ma l'ho installato** (Windows): quasi sempre manca la spunta *Add python.exe to PATH*. Reinstalla Python spuntandola.
 - **Sembra bloccato**: il primo avvio e la prima trascrizione scaricano file grandi senza mostrare una barra. Aspetta qualche minuto e guarda la finestra nera: lì compaiono i messaggi.
@@ -63,6 +74,10 @@ Senza Ollama il pacchetto studio è essenziale. Con Ollama, un programma gratuit
 4. **Export**: RTF (Word/Pages/LibreOffice), Markdown, appunti AI in Markdown, TXT con minuti, sottotitoli SRT, JSON completo.
 
 Tutto viene salvato in cache per impronta del file (`~/.cache/transcriptor` su Mac e Linux, `C:\Users\<nome>\.cache\transcriptor` su Windows; cambiabile con la variabile d'ambiente `TRANSCRIPTOR_CACHE_DIR`): rigenerare il pacchetto con un altro modello o livello di sintesi non ritrascrive nulla.
+
+## Pacchetto portatile per Windows
+
+Lo ZIP nelle [Release](https://github.com/poppedio/sbobinatore/releases) è costruito automaticamente da GitHub Actions (`.github/workflows/windows-portable.yml`) a ogni tag `v*`: Python embeddable 3.12 di python.org, tutte le librerie di `requirements.txt`, l'app e il lanciatore `Sbobinatore.bat`. Il workflow verifica che l'app si carichi con il Python incluso e che il lanciatore risponda su `localhost:8501` prima di pubblicare. Il pacchetto non è firmato digitalmente, per questo SmartScreen mostra un avviso al primo avvio; usa la CPU, la GPU NVIDIA resta configurabile dalle impostazioni avanzate. Lo script è `packaging/windows/build_portable.ps1` e si può eseguire anche a mano su Windows.
 
 ## Per chi vuole il controllo: installazione manuale
 
@@ -128,6 +143,7 @@ Tempi indicativi su Mac M-series con `large-v3-turbo`: una lezione di 90 minuti 
 
 ```
 Avvia.command / Avvia.bat  avvio con doppio clic (Mac e Linux / Windows): venv, dipendenze, Streamlit
+packaging/windows/         script e lanciatore del pacchetto portatile Windows (zip con Python incluso)
 app.py                     interfaccia Streamlit (sorgente, job in background, risultati, export)
 transcriptor/audio.py      conversione ffmpeg/PyAV, hash, VAD e piano dei blocchi
 transcriptor/transcribe.py backend mlx-whisper / faster-whisper, progresso, ripresa, filtro allucinazioni

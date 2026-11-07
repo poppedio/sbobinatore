@@ -1,0 +1,5 @@
+streamlit>=1.40.0
+faster-whisper>=1.1.0
+mlx-whisper>=0.4.1; platform_system=="Darwin" and platform_machine=="arm64"
+requests>=2.32.0
+numpy>=1.26

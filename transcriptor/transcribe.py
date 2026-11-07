@@ -1,7 +1,9 @@
 """Trascrizione a blocchi con mlx-whisper o faster-whisper, con progresso, annullamento e ripresa."""
 from __future__ import annotations
 
+import os
 import platform
+from pathlib import Path
 import re
 import threading
 import time
@@ -71,6 +73,43 @@ def faster_model_for(model_size: str) -> str:
 
 def choose_default_model() -> str:
     return "large-v3-turbo" if is_apple_silicon_mac() else "medium"
+
+
+# dimensione approssimativa del download (GB) per avvisare l'utente al primo uso
+MODEL_DOWNLOAD_GB = {
+    "tiny": 0.08, "base": 0.15, "small": 0.5, "medium": 1.5, "large-v3": 3.1, "large-v3-turbo": 1.6,
+}
+
+FASTER_WHISPER_REPOS = {
+    "tiny": "Systran/faster-whisper-tiny", "base": "Systran/faster-whisper-base",
+    "small": "Systran/faster-whisper-small", "medium": "Systran/faster-whisper-medium",
+    "large-v3": "Systran/faster-whisper-large-v3", "large-v3-turbo": "mobiuslabsgmbh/faster-whisper-large-v3-turbo",
+}
+
+
+def hf_hub_cache_dir() -> Path:
+    env = os.environ.get("HF_HUB_CACHE")
+    if env:
+        return Path(env).expanduser()
+    home = os.environ.get("HF_HOME")
+    base = Path(home).expanduser() if home else Path.home() / ".cache" / "huggingface"
+    return base / "hub"
+
+
+def model_repo_for(model_size: str, backend: str) -> str:
+    if resolve_backend(backend) == "mlx-whisper":
+        return mlx_repo_for(model_size)
+    return FASTER_WHISPER_REPOS.get(faster_model_for(model_size), FASTER_WHISPER_REPOS["large-v3-turbo"])
+
+
+def model_is_downloaded(model_size: str, backend: str = "auto") -> bool:
+    """True se il modello Whisper è già nella cache di Hugging Face (nessun download al primo uso)."""
+    repo = model_repo_for(model_size, backend)
+    folder = hf_hub_cache_dir() / ("models--" + repo.replace("/", "--")) / "snapshots"
+    try:
+        return any(any(snap.iterdir()) for snap in folder.iterdir() if snap.is_dir())
+    except OSError:
+        return False
 
 
 # --- cache dei modelli (un caricamento per processo) ---

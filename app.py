@@ -32,6 +32,8 @@ from transcriptor.textproc import (
     slugify,
 )
 from transcriptor.transcribe import (
+    MODEL_DOWNLOAD_GB,
+    model_is_downloaded,
     MODEL_OPTIONS,
     choose_default_model,
     is_apple_silicon_mac,
@@ -401,6 +403,11 @@ transcribe_opts = {
     "compute_type": compute_type, "vad_filter": vad_filter, "chunk_minutes": chunk_minutes,
     "allow_cpu_fallback": allow_cpu_fallback,
 }
+if transcribe_job is None and not model_is_downloaded(model_size, backend):
+    _gb = MODEL_DOWNLOAD_GB.get(model_size, 1.6)
+    st.info(f"Prima volta con il modello **{model_size}**: verrà scaricato (circa {_gb:g} GB) da Hugging Face. "
+            "Possono servire alcuni minuti in base alla connessione e la barra di avanzamento parte solo dopo. "
+            "Lascia aperta la finestra. Succede una volta sola: la volta dopo si parte subito.")
 cols = st.columns([1, 4])
 label = "Ritrascrivi" if transcript else "Trascrivi"
 if cols[0].button(label, type="primary", disabled=transcribe_job is not None, **_WIDE):

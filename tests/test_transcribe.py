@@ -24,3 +24,16 @@ def test_model_name_mapping():
     assert mlx_repo_for("mlx-community/whisper-small") == "mlx-community/whisper-small"
     assert faster_model_for("mlx-community/whisper-large-v3") == "large-v3"
     assert faster_model_for("medium") == "medium"
+
+
+def test_model_is_downloaded_uses_hf_cache(tmp_path, monkeypatch):
+    from transcriptor.transcribe import model_is_downloaded, model_repo_for
+
+    monkeypatch.setenv("HF_HUB_CACHE", str(tmp_path))
+    assert model_is_downloaded("medium", "faster-whisper") is False
+    repo = model_repo_for("medium", "faster-whisper")
+    snap = tmp_path / ("models--" + repo.replace("/", "--")) / "snapshots" / "abc"
+    snap.mkdir(parents=True)
+    assert model_is_downloaded("medium", "faster-whisper") is False  # snapshot vuoto
+    (snap / "model.bin").write_bytes(b"x")
+    assert model_is_downloaded("medium", "faster-whisper") is True

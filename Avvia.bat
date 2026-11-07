@@ -2,6 +2,8 @@
 setlocal
 cd /d "%~dp0"
 title Sbobinatore
+rem UTF-8 per Python: evita errori di codifica con accenti ed emoji nella console
+set PYTHONUTF8=1
 echo.
 echo   === Sbobinatore ===
 echo.

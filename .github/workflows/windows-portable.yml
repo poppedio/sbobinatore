@@ -22,6 +22,8 @@ jobs:
       - name: Test 1, l'app si carica con il Python incluso
         shell: pwsh
         working-directory: build/Sbobinatore
+        env:
+          PYTHONUTF8: "1"
         run: |
           ./python/python.exe -c "from streamlit.testing.v1 import AppTest; at = AppTest.from_file('app.py', default_timeout=180).run(); assert not at.exception, at.exception; print('app ok, titolo:', at.title[0].value)"
 
